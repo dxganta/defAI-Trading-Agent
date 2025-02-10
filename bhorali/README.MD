@@ -10,7 +10,7 @@ todo:
 Based on that suggest few coins to invest in.
 Rinse and repeat every 24 hrs or longer for lower risk.
 
-## TODO: Add a risk assessment node that will assess the risks of the coins and filter out the ones that are too risky, also giving out a risk score + analysis report.
+## TODO: Improve the risk assessment node. Give it tools to do more complex risk research for each coin.
 
 
 
