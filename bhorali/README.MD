@@ -32,7 +32,7 @@ Rinse and repeat every 24 hrs or longer for lower risk.
      - Dune Analytics API
      - Etherscan/BSCScan APIs
 
-2. **Whale Wallet Monitoring**
+2. **Whale Wallet Monitoring** ✅
    ```python
    def monitor_whale_wallets(token_address):
        # Define whale threshold (e.g., >1% of supply)
