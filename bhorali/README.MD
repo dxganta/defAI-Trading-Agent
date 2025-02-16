@@ -48,7 +48,7 @@ Rinse and repeat every 24 hrs or longer for lower risk.
            analyze_whale_behavior(recent_transfers)
    ```
 
-3. **Token Distribution Analysis**
+3. **Token Distribution Analysis** ✅
    ```python
    def analyze_token_distribution(token_address):
        # Get all holders
