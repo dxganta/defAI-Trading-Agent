@@ -92,28 +92,6 @@ Rinse and repeat every 24 hrs or longer for lower risk.
        }
    ```
 
-5. **DEX Liquidity Monitoring**
-   ```python
-   def monitor_dex_liquidity(token_address):
-       # Track major DEX pairs
-       dexes = ['uniswap_v2', 'uniswap_v3', 'sushiswap', 'pancakeswap']
-       
-       liquidity_data = {}
-       for dex in dexes:
-           # Get liquidity pool data
-           pool = get_liquidity_pool(dex, token_address)
-           
-           # Monitor key metrics
-           liquidity_data[dex] = {
-               'total_liquidity': pool.total_liquidity,
-               'liquidity_changes_24h': pool.changes_24h,
-               'pool_concentration': analyze_pool_concentration(pool)
-           }
-           
-           # Set up alerts for sudden liquidity removals
-           monitor_liquidity_removals(pool)
-   ```
-
 6. **Smart Contract Interaction Analysis**
    ```python
    def analyze_contract_interactions(token_address):
@@ -136,6 +114,14 @@ Rinse and repeat every 24 hrs or longer for lower risk.
    ```
 
 7. **Risk Scoring System**
+Score the token from 1 to 10 for the following parameters with detailed reports
+supporting the score:
+    1. Very Short term investment potential (1-7 Days)
+    2. Short term investment potential (1-2 months)
+    3. Medium term investment potential (3-6 months)
+    4. Long term investment potential (6-36 months)
+    5. Value investment potential (3-10 years or maybe more)
+    
    ```python
    def calculate_onchain_risk_score(token_address):
        scores = {
