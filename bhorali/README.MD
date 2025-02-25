@@ -92,7 +92,7 @@ Rinse and repeat every 24 hrs or longer for lower risk.
        }
    ```
 
-6. **Smart Contract Interaction Analysis**
+6. **Smart Contract Interaction Analysis** (Not implemented. Later)
    ```python
    def analyze_contract_interactions(token_address):
        # Get contract events
@@ -121,7 +121,7 @@ supporting the score:
     3. Medium term investment potential (3-6 months)
     4. Long term investment potential (6-36 months)
     5. Value investment potential (3-10 years or maybe more)
-    
+
    ```python
    def calculate_onchain_risk_score(token_address):
        scores = {
