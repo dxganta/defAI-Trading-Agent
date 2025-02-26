@@ -3,13 +3,7 @@ from dotenv import load_dotenv
 import os
 import json
 import requests
-import json
-from datetime import datetime, timedelta
-import math
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-from matplotlib.gridspec import GridSpec
+from datetime import datetime
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,6 +23,13 @@ SHIB_INU = "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE"
 def get_web3() -> Web3:
     """Returns a Web3 instance connected to the Ethereum network via Alchemy"""
     return Web3(Web3.HTTPProvider(os.getenv("ALCHEMY_ETHEREUM_RPC_URL")))
+
+
+def get_token_name(token_address: str) -> str:
+    """Returns the name of a token from its address"""
+    web3 = get_web3()
+    contract = web3.eth.contract(address=token_address, abi=ERC20_ABI)
+    return contract.functions.name().call()
 
 
 def is_contract_address(address: str) -> bool:
