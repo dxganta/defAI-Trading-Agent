@@ -14,7 +14,7 @@ blacklisted_wallets = [
 ]
 
 
-with open("abis/ERC20.json", "r") as f:
+with open("onchain/abis/ERC20.json", "r") as f:
     ERC20_ABI = json.load(f)
 
 SHIB_INU = "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE"

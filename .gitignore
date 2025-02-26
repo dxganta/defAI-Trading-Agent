@@ -34,3 +34,9 @@ ENV/
 *.swp
 *.swo
 .DS_Store
+
+# Test files
+*test.*
+*tests.*
+*_test.*
+*_tests.*
