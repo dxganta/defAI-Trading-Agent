@@ -115,18 +115,6 @@ def monitor_whale_wallets(token_address: str, days: int = 7):
                             'total_incoming_amount': float,  # Total tokens received
                             'net_flow': float,        # Net token flow (incoming - outgoing)
                         },
-
-                        'recent_transfers': [         # List of recent transfers
-                            {
-                                'block_number': int,  # Block number of transfer
-                                'transaction_hash': str,  # Transaction hash
-                                'type': str,         # 'in' or 'out'
-                                'counterparty': str, # Address of sender/receiver
-                                'amount': float,     # Transfer amount
-                                'direction': str     # 'incoming' or 'outgoing'
-                            },
-                            ...
-                        ]
                     },
                     ...
                 ]
@@ -228,23 +216,6 @@ def monitor_whale_wallets(token_address: str, days: int = 7):
                     "total_incoming_amount": total_incoming,
                     "net_flow": total_incoming - total_outgoing,
                 },
-                "recent_transfers": [
-                    {
-                        "block_number": transfer["blockNumber"],
-                        "transaction_hash": transfer["transactionHash"],
-                        "type": transfer["type"],
-                        "counterparty": (
-                            transfer["to"]
-                            if transfer["type"] == "out"
-                            else transfer["from"]
-                        ),
-                        "amount": transfer["value"] / (10**decimals),
-                        "direction": (
-                            "outgoing" if transfer["type"] == "out" else "incoming"
-                        ),
-                    }
-                    for transfer in recent_transfers
-                ],
             }
 
             whales_data["whales"].append(whale_data)

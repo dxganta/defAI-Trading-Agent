@@ -465,13 +465,53 @@ def analyze_technical_indicators(ohlcv_data: list) -> dict:
     }
 
 
-def visualize_technical_analysis(ohlcv_data: list, analysis_results: dict) -> None:
+def get_essential_indicators(full_analysis) -> dict:
+    """
+    Extract only essential technical indicators (Bollinger Bands, VWAP, and trading signals)
+
+    Args:
+        ohlcv_data (list): OHLCV data points
+
+    Returns:
+        dict: Essential technical indicators and signals
+    """
+
+    # Extract only the needed components
+    essential_analysis = {
+        "current_price": full_analysis["macd"]["values"]["macd_line"][
+            -1
+        ],  # Get current price
+        "bollinger_bands": {
+            "current": full_analysis["bollinger_bands"]["current"],
+            "volatility": full_analysis["bollinger_bands"]["volatility"],
+        },
+        "vwap": {
+            "current": round(full_analysis["vwap"]["current"], 6),
+            "trend": full_analysis["vwap"]["trend"],
+        },
+        "trading_signals": {
+            "signals": full_analysis["trading_signals"]["signals"][
+                :3
+            ],  # Only keep last 3 signals
+            "overall_bias": full_analysis["trading_signals"]["overall_bias"],
+        },
+    }
+
+    return essential_analysis
+
+
+def visualize_technical_analysis(
+    ohlcv_data: list, analysis_results: dict
+) -> plt.Figure:
     """
     Create visualizations for technical analysis results using standard libraries
 
     Args:
         ohlcv_data (list): OHLCV data points
         analysis_results (dict): Output from analyze_technical_indicators
+
+    Returns:
+        plt.Figure: The generated matplotlib figure containing the visualizations
     """
 
     try:
@@ -491,9 +531,11 @@ def visualize_technical_analysis(ohlcv_data: list, analysis_results: dict) -> No
         # Set style
         plt.style.use("seaborn")
 
-        # Create figure with subplots
+        # Create figure with subplots - adjust height_ratios and hspace
         fig = plt.figure(figsize=(20, 15))
-        gs = GridSpec(3, 2, figure=fig)
+        gs = GridSpec(
+            3, 2, figure=fig, height_ratios=[2, 1, 1], hspace=0.3
+        )  # Adjust height ratios and vertical spacing
 
         # 1. Price and Volume Chart
         ax1 = fig.add_subplot(gs[0, :])
@@ -542,14 +584,14 @@ def visualize_technical_analysis(ohlcv_data: list, analysis_results: dict) -> No
                     alpha=0.7,
                 )
 
-        # Add volume bars on secondary axis
-        ax1v = ax1.twinx()
-        ax1v.bar(df.index, df["Volume"], alpha=0.3, color="gray", label="Volume")
-        ax1v.set_ylabel("Volume")
+        # Add volume bars with reduced height
+        volume_ax = ax1.twinx()
+        volume_ax.bar(df.index, df["Volume"], alpha=0.3, color="gray", width=0.8)
+        volume_ax.set_ylim(0, df["Volume"].max() * 3)  # Adjust volume scale
 
         ax1.set_title("Price Action with Technical Indicators")
         ax1.legend(loc="upper left")
-        ax1v.legend(loc="upper right")
+        ax1.legend(loc="upper right")
 
         # 2. MACD
         if "macd" in analysis_results and "values" in analysis_results["macd"]:
@@ -608,16 +650,33 @@ def visualize_technical_analysis(ohlcv_data: list, analysis_results: dict) -> No
                 ax3.set_title("Stochastic Oscillator")
                 ax3.legend()
 
-        # 4. Fibonacci Levels
-        if "fibonacci_levels" in analysis_results:
+        # 4. Rate of Change (ROC)
+        if "momentum_indicators" in analysis_results:
             ax4 = fig.add_subplot(gs[2, 0])
-            ax4.plot(df.index, df["Close"], color="black", alpha=0.7)
+            momentum_data = analysis_results["momentum_indicators"]
+
+            if "roc" in momentum_data:
+                roc_values = momentum_data["roc"]
+                ax4.plot(
+                    df.index[-len(roc_values) :],
+                    roc_values,
+                    label="Rate of Change",
+                    color="purple",
+                )
+                ax4.axhline(y=0, color="r", linestyle="--", alpha=0.3)
+                ax4.set_title("Rate of Change (ROC)")
+                ax4.legend()
+
+        # 5. Fibonacci Levels
+        if "fibonacci_levels" in analysis_results:
+            ax5 = fig.add_subplot(gs[2, 1])
+            ax5.plot(df.index, df["Close"], color="black", alpha=0.7)
 
             fib_levels = analysis_results["fibonacci_levels"]
             colors = plt.cm.rainbow(np.linspace(0, 1, len(fib_levels)))
 
             for (level_name, price), color in zip(fib_levels.items(), colors):
-                ax4.axhline(
+                ax5.axhline(
                     y=price,
                     color=color,
                     linestyle="--",
@@ -625,45 +684,36 @@ def visualize_technical_analysis(ohlcv_data: list, analysis_results: dict) -> No
                     label=f"{level_name}: {price:.6f}",
                 )
 
-            ax4.set_title("Fibonacci Levels")
-            ax4.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
-
-        # 5. Volume Profile
-        ax5 = fig.add_subplot(gs[2, 1])
-        price_bins = np.linspace(df["Low"].min(), df["High"].max(), 50)
-        volume_profile = []
-
-        for i in range(len(price_bins) - 1):
-            mask = (df["Low"] >= price_bins[i]) & (df["High"] < price_bins[i + 1])
-            volume_profile.append(df.loc[mask, "Volume"].sum())
-
-        ax5.barh(
-            price_bins[:-1],
-            volume_profile,
-            height=price_bins[1] - price_bins[0],
-            alpha=0.3,
-        )
-        ax5.set_title("Volume Profile")
+            ax5.set_title("Fibonacci Levels")
+            ax5.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 
         # Add overall title with key signals
         if "trading_signals" in analysis_results:
             signals = analysis_results["trading_signals"].get("signals", [])
             bias = analysis_results["trading_signals"].get("overall_bias", "Unknown")
 
+            # Get last two signals and format them nicely
+            latest_signals = signals[-2:] if signals else ["No signals"]
+            signal_text = "\n".join(latest_signals)  # Put each signal on new line
+
             plt.suptitle(
-                f"Technical Analysis Overview\n"
-                + f"Overall Bias: {bias}\n"
-                + f"Latest Signals: {', '.join(signals[-2:] if signals else ['No signals'])}",
-                fontsize=14,
-                y=0.95,
+                "Technical Analysis Overview\n\n"  # Add extra newline for spacing
+                + f"Overall Bias: {bias}\n\n"  # Add extra newline for spacing
+                + f"Latest Signals:\n{signal_text}",
+                fontsize=12,  # Reduced font size
+                y=0.98,  # Moved title up slightly
+                verticalalignment="top",  # Align from top
             )
 
-        plt.tight_layout()
-        plt.show()
+        # Adjust layout to prevent text overlap but maintain tighter spacing
+        plt.tight_layout(
+            rect=[0, 0, 1, 0.95], h_pad=0.8
+        )  # Reduced padding between plots
+        return fig
 
     except Exception as e:
         print(f"Error creating visualizations: {str(e)}")
         import traceback
 
         traceback.print_exc()
-        return
+        return None

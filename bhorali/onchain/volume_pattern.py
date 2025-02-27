@@ -810,3 +810,88 @@ def visualize_volume_analysis(ohlcv_data: list, analysis_results: dict) -> None:
 
     plt.tight_layout()
     plt.show()
+
+
+def get_volume_snapshot(full_analysis: dict) -> dict:
+    """
+    Get current volume metrics and health indicators without temporal analysis
+
+    Args:
+        token_address (str): The token contract address to analyze
+        ohlcv_data (list): List of OHLCV data points
+
+    Returns:
+        dict: Current volume snapshot with key metrics:
+            {
+                'token_info': {
+                    'address': str,
+                    'symbol': str
+                },
+                'current_metrics': {
+                    'average_volume': float,
+                    'volume_stability': float,
+                    'liquidity_score': float,
+                    'wash_trading_risk': str,
+                    'market_impact': {
+                        'slippage_estimate': float,
+                        'price_impact_score': float
+                    }
+                },
+                'health_indicators': {
+                    'overall_health': str,
+                    'liquidity_rating': str,
+                    'manipulation_risk': str,
+                    'volume_stability': str
+                },
+                'key_metrics': {
+                    'price_volume_correlation': float,
+                    'volume_concentration': float,
+                    'suspicious_patterns_count': int
+                }
+            }
+    """
+
+    if "error" in full_analysis:
+        return full_analysis
+
+    # Extract relevant non-temporal metrics
+    return {
+        "token_info": {
+            "address": full_analysis["token_info"]["address"],
+            "symbol": full_analysis["token_info"]["symbol"],
+        },
+        "current_metrics": {
+            "average_volume": full_analysis["volume_metrics"]["basic_metrics"][
+                "average_hourly_volume"
+            ],
+            "volume_stability": full_analysis["liquidity_analysis"]["volume_stability"],
+            "liquidity_score": full_analysis["liquidity_analysis"]["liquidity_score"],
+            "wash_trading_risk": full_analysis["trading_patterns"][
+                "wash_trading_indicators"
+            ]["risk_level"],
+            "market_impact": {
+                "slippage_estimate": full_analysis["liquidity_analysis"][
+                    "slippage_estimates"
+                ]["low_volume_slippage"],
+                "price_impact_score": full_analysis["trading_patterns"][
+                    "wash_trading_indicators"
+                ]["confidence_score"],
+            },
+        },
+        "health_indicators": full_analysis["ai_insights"]["market_health_indicators"],
+        "key_metrics": {
+            "price_volume_correlation": (
+                full_analysis["anomaly_detection"]["price_volume_divergences"][0][
+                    "divergence_score"
+                ]
+                if full_analysis["anomaly_detection"]["price_volume_divergences"]
+                else 0
+            ),
+            "volume_concentration": full_analysis["liquidity_analysis"][
+                "concentration_metrics"
+            ]["top_hours_concentration"],
+            "suspicious_patterns_count": len(
+                full_analysis["anomaly_detection"]["unusual_patterns"]
+            ),
+        },
+    }

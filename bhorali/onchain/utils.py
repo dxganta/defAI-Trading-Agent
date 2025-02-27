@@ -70,22 +70,25 @@ def get_bitquery_access_token() -> str:
 
 def get_token_holders(token_address: str, limit: int = 10) -> dict:
     """
-    Get top token holders for a given token address using BitQuery API
+    Get top token holders for a given token address using BitQuery API,
+    excluding contract addresses
 
     Args:
         token_address: Ethereum token contract address
         limit: Number of top holders to return (default 10)
 
     Returns:
-        dict: Response containing token holder data
+        dict: Response containing token holder data for non-contract addresses
     """
-
     access_token = get_bitquery_access_token()
     url = "https://streaming.bitquery.io/graphql"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {access_token}",
     }
+
+    # Request more holders than needed since we'll filter out contracts
+    adjusted_limit = limit * 2
 
     payload = json.dumps(
         {
@@ -108,20 +111,22 @@ def get_token_holders(token_address: str, limit: int = 10) -> dict:
       }
     }
         """
-            % (datetime.now().strftime("%Y-%m-%d"), token_address, limit)
+            % (datetime.now().strftime("%Y-%m-%d"), token_address, adjusted_limit)
         }
     )
 
     try:
         response = requests.post(url, headers=headers, data=payload)
         holders = response.json()["data"]["EVM"]["TokenHolders"]
-        return [
+        filtered_holders = [
             {
                 "balance": float(h["Balance"]["Amount"]),
                 "address": h["Holder"]["Address"],
             }
             for h in holders
+            if not is_contract_address(h["Holder"]["Address"])
         ]
+        return filtered_holders[:limit]  # Return only up to the requested limit
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return None
@@ -130,3 +135,28 @@ def get_token_holders(token_address: str, limit: int = 10) -> dict:
 def assert_token_address(token_address: str):
     web3 = get_web3()
     assert web3.isAddress(token_address), "Invalid token address"
+
+
+def send_telegram_message(message: str) -> None:
+    """Send a message via Telegram bot"""
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    if not bot_token or not chat_id:
+        raise ValueError(
+            "Telegram bot token or chat ID not found in environment variables"
+        )
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+    # Split message into chunks if it's too long (Telegram has a 4096 character limit)
+    max_length = 4096
+    messages = [message[i : i + max_length] for i in range(0, len(message), max_length)]
+
+    for msg in messages:
+        try:
+            payload = {"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"}
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+        except Exception as e:
+            print(f"Failed to send Telegram message: {e}")
