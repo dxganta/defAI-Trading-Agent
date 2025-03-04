@@ -478,9 +478,7 @@ def get_essential_indicators(full_analysis) -> dict:
 
     # Extract only the needed components
     essential_analysis = {
-        "current_price": full_analysis["macd"]["values"]["macd_line"][
-            -1
-        ],  # Get current price
+        "current_price": full_analysis["bollinger_bands"]["current"]["middle_band"],
         "bollinger_bands": {
             "current": full_analysis["bollinger_bands"]["current"],
             "volatility": full_analysis["bollinger_bands"]["volatility"],

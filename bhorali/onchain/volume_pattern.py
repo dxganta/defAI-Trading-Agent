@@ -4,6 +4,7 @@ import seaborn as sns
 from matplotlib.gridspec import GridSpec
 from .utils import get_web3, ERC20_ABI
 import requests
+from matplotlib.dates import DateFormatter
 
 
 def get_ohlcv_data(token_address: str) -> dict:
@@ -707,39 +708,72 @@ def analyze_token_volume_comprehensive(token_address: str, ohlcv_data: list) -> 
         return {"error": f"Analysis failed: {str(e)}", "token_address": token_address}
 
 
-def visualize_volume_analysis(ohlcv_data: list, analysis_results: dict) -> None:
+def visualize_volume_analysis(ohlcv_data: list, analysis_results: dict) -> plt.Figure:
     """
     Create visualizations from volume analysis results
 
     Args:
         ohlcv_data (list): Raw OHLCV data used for analysis
         analysis_results (dict): Output from analyze_token_volume_comprehensive
+
+    Returns:
+        plt.Figure: The generated matplotlib figure containing all visualizations
     """
     # Extract data
     volumes = [point[5] for point in ohlcv_data]
     timestamps = [datetime.fromtimestamp(point[0]) for point in ohlcv_data]
     prices = [point[4] for point in ohlcv_data]
 
+    # Calculate moving averages
+    short_period, long_period = 24, 72
+    short_ma = []
+    long_ma = []
+    short_ma_timestamps = []
+    long_ma_timestamps = []
+
+    for i in range(len(volumes)):
+        if i >= short_period - 1:
+            short_ma.append(sum(volumes[i - (short_period - 1) : i + 1]) / short_period)
+            short_ma_timestamps.append(timestamps[i])
+        if i >= long_period - 1:
+            long_ma.append(sum(volumes[i - (long_period - 1) : i + 1]) / long_period)
+            long_ma_timestamps.append(timestamps[i])
+
     # Create figure with subplots
     plt.style.use("seaborn")
     fig = plt.figure(figsize=(20, 15))
-    gs = GridSpec(3, 2, figure=fig)
+    # Using a simpler approach with more space at the top
+    gs = GridSpec(3, 2, figure=fig, hspace=0.4, wspace=0.3, top=0.85)
 
     # 1. Volume Over Time with Moving Averages
     ax1 = fig.add_subplot(gs[0, :])
     ax1.plot(timestamps, volumes, label="Volume", alpha=0.5, color="gray")
 
-    # Add moving averages if available
-    ma_data = analysis_results["volume_metrics"]["trend_analysis"]["moving_averages"]
-    if ma_data["24h"]:
-        ax1.axhline(y=ma_data["24h"], color="blue", linestyle="--", label="24h MA")
-    if ma_data["72h"]:
-        ax1.axhline(y=ma_data["72h"], color="red", linestyle="--", label="72h MA")
+    # Plot moving averages as lines
+    if short_ma:
+        ax1.plot(short_ma_timestamps, short_ma, label="24h MA", color="blue")
+    if long_ma:
+        ax1.plot(long_ma_timestamps, long_ma, label="72h MA", color="red")
 
     ax1.set_title("Volume Over Time with Moving Averages")
     ax1.set_xlabel("Date")
     ax1.set_ylabel("Volume")
     ax1.legend()
+
+    # Add better axis formatting
+    ax1.grid(True, alpha=0.3)
+    ax1.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d"))
+    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
+
+    # Format volume numbers with K/M suffixes
+    def format_volume(x, p):
+        if x >= 1e6:
+            return f"{x/1e6:.1f}M"
+        elif x >= 1e3:
+            return f"{x/1e3:.1f}K"
+        return f"{x:.1f}"
+
+    ax1.yaxis.set_major_formatter(plt.FuncFormatter(format_volume))
 
     # 2. Hourly Volume Distribution
     ax2 = fig.add_subplot(gs[1, 0])
@@ -761,16 +795,30 @@ def visualize_volume_analysis(ohlcv_data: list, analysis_results: dict) -> None:
 
     ax3.plot(timestamps, volumes, color="gray", alpha=0.5, label="Volume")
     if anomalies:
-        anomaly_times = [
-            datetime.strptime(a["timestamp"], "%Y-%m-%d %H:%M:%S") for a in anomalies
-        ]
-        anomaly_volumes = [a["volume"] for a in anomalies]
-        ax3.scatter(anomaly_times, anomaly_volumes, color="red", label="Anomalies")
+        try:
+            anomaly_times = [
+                datetime.strptime(a["timestamp"], "%Y-%m-%d %H:%M:%S")
+                for a in anomalies
+            ]
+            anomaly_volumes = [a["volume"] for a in anomalies]
+            ax3.scatter(
+                anomaly_times, anomaly_volumes, color="red", label="Anomalies", s=100
+            )
+        except (ValueError, KeyError) as e:
+            print(f"Warning: Could not plot anomalies due to {str(e)}")
 
     ax3.set_title("Volume Anomalies")
     ax3.set_xlabel("Date")
     ax3.set_ylabel("Volume")
     ax3.legend()
+
+    # Add better axis formatting
+    ax3.grid(True, alpha=0.3)
+    ax3.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d"))
+    plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45)
+
+    # Format volume numbers with K/M suffixes
+    ax3.yaxis.set_major_formatter(plt.FuncFormatter(format_volume))
 
     # 4. Price-Volume Correlation
     ax4 = fig.add_subplot(gs[2, 0])
@@ -782,9 +830,15 @@ def visualize_volume_analysis(ohlcv_data: list, analysis_results: dict) -> None:
     # 5. Volume Stability Heatmap
     ax5 = fig.add_subplot(gs[2, 1])
     stability_data = []
-    for i in range(0, len(volumes), 24):  # Group by day
-        if i + 24 <= len(volumes):
-            stability_data.append(volumes[i : i + 24])
+    if len(volumes) >= 24:  # Only create heatmap if we have at least a day of data
+        for i in range(0, len(volumes) - 23, 24):  # Ensure we have complete days
+            if i + 24 <= len(volumes):
+                day_data = volumes[i : i + 24]
+                # Normalize the day's data to make patterns more visible
+                day_mean = sum(day_data) / len(day_data)
+                if day_mean > 0:  # Avoid division by zero
+                    day_data = [v / day_mean for v in day_data]
+                stability_data.append(day_data)
 
     if stability_data:
         sns.heatmap(
@@ -792,24 +846,26 @@ def visualize_volume_analysis(ohlcv_data: list, analysis_results: dict) -> None:
             cmap="YlOrRd",
             ax=ax5,
             xticklabels=[f"{i:02d}:00" for i in range(24)],
-            yticklabels=False,
+            yticklabels=[f"Day {i+1}" for i in range(len(stability_data))],
+            cbar_kws={"label": "Relative Volume"},
         )
-        ax5.set_title("Volume Stability Heatmap (Days x Hours)")
-        ax5.set_xlabel("Hour of Day")
-        ax5.set_ylabel("Days")
 
-    # Add overall title with key metrics
-    plt.suptitle(
+    # Create a single title with line breaks instead of separate text elements
+    avg_volume = analysis_results["volume_metrics"]["basic_metrics"][
+        "average_hourly_volume"
+    ]
+    volume_trend = analysis_results["volume_metrics"]["trend_analysis"]["current_trend"]
+    liquidity_score = analysis_results["liquidity_analysis"]["liquidity_score"]
+
+    title_text = (
         f"Volume Analysis for {analysis_results['token_info']['symbol']}\n"
-        + f"Average Daily Volume: {analysis_results['volume_metrics']['basic_metrics']['average_daily_volume']:,.2f}\n"
-        + f"Volume Trend: {analysis_results['volume_metrics']['trend_analysis']['current_trend']}\n"
-        + f"Liquidity Score: {analysis_results['liquidity_analysis']['liquidity_score']:.2f}",
-        fontsize=14,
-        y=0.95,
+        f"Avg Vol: {avg_volume:,.2f} | Trend: {volume_trend} | Liquidity Score: {liquidity_score:.2f}"
     )
+    fig.suptitle(title_text, fontsize=14, y=0.93, linespacing=1.5)
 
-    plt.tight_layout()
-    plt.show()
+    # Adjust layout to ensure no overlapping
+    plt.tight_layout(rect=[0, 0, 1, 0.88])
+    return fig
 
 
 def get_volume_snapshot(full_analysis: dict) -> dict:
@@ -821,40 +877,11 @@ def get_volume_snapshot(full_analysis: dict) -> dict:
         ohlcv_data (list): List of OHLCV data points
 
     Returns:
-        dict: Current volume snapshot with key metrics:
-            {
-                'token_info': {
-                    'address': str,
-                    'symbol': str
-                },
-                'current_metrics': {
-                    'average_volume': float,
-                    'volume_stability': float,
-                    'liquidity_score': float,
-                    'wash_trading_risk': str,
-                    'market_impact': {
-                        'slippage_estimate': float,
-                        'price_impact_score': float
-                    }
-                },
-                'health_indicators': {
-                    'overall_health': str,
-                    'liquidity_rating': str,
-                    'manipulation_risk': str,
-                    'volume_stability': str
-                },
-                'key_metrics': {
-                    'price_volume_correlation': float,
-                    'volume_concentration': float,
-                    'suspicious_patterns_count': int
-                }
-            }
+        dict: Current volume snapshot with key metrics
     """
-
     if "error" in full_analysis:
         return full_analysis
 
-    # Extract relevant non-temporal metrics
     return {
         "token_info": {
             "address": full_analysis["token_info"]["address"],
@@ -863,6 +890,15 @@ def get_volume_snapshot(full_analysis: dict) -> dict:
         "current_metrics": {
             "average_volume": full_analysis["volume_metrics"]["basic_metrics"][
                 "average_hourly_volume"
+            ],
+            "peak_volume": full_analysis["volume_metrics"]["basic_metrics"][
+                "peak_volume"
+            ],
+            "min_volume": full_analysis["volume_metrics"]["basic_metrics"][
+                "min_volume"
+            ],
+            "volume_std_dev": full_analysis["volume_metrics"]["basic_metrics"][
+                "volume_std_dev"
             ],
             "volume_stability": full_analysis["liquidity_analysis"]["volume_stability"],
             "liquidity_score": full_analysis["liquidity_analysis"]["liquidity_score"],
@@ -873,12 +909,25 @@ def get_volume_snapshot(full_analysis: dict) -> dict:
                 "slippage_estimate": full_analysis["liquidity_analysis"][
                     "slippage_estimates"
                 ]["low_volume_slippage"],
+                "high_volume_slippage": full_analysis["liquidity_analysis"][
+                    "slippage_estimates"
+                ]["high_volume_slippage"],
+                "slippage_volatility": full_analysis["liquidity_analysis"][
+                    "slippage_estimates"
+                ]["slippage_volatility"],
                 "price_impact_score": full_analysis["trading_patterns"][
                     "wash_trading_indicators"
                 ]["confidence_score"],
             },
         },
-        "health_indicators": full_analysis["ai_insights"]["market_health_indicators"],
+        "health_indicators": {
+            **full_analysis["ai_insights"]["market_health_indicators"],
+            "key_findings": full_analysis["ai_insights"]["key_findings"],
+            "risk_factors": full_analysis["ai_insights"]["risk_factors"],
+            "trading_recommendations": full_analysis["ai_insights"][
+                "trading_recommendations"
+            ],
+        },
         "key_metrics": {
             "price_volume_correlation": (
                 full_analysis["anomaly_detection"]["price_volume_divergences"][0][
@@ -890,8 +939,17 @@ def get_volume_snapshot(full_analysis: dict) -> dict:
             "volume_concentration": full_analysis["liquidity_analysis"][
                 "concentration_metrics"
             ]["top_hours_concentration"],
+            "volume_distribution": full_analysis["liquidity_analysis"][
+                "concentration_metrics"
+            ]["volume_distribution"],
             "suspicious_patterns_count": len(
                 full_analysis["anomaly_detection"]["unusual_patterns"]
             ),
+            "peak_trading_hours": full_analysis["trading_patterns"]["seasonality"][
+                "peak_hours"
+            ],
+            "low_volume_hours": full_analysis["trading_patterns"]["seasonality"][
+                "low_volume_hours"
+            ],
         },
     }
