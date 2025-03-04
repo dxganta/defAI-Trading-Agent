@@ -15,7 +15,7 @@ def get_ohlcv_data(token_address: str) -> dict:
         token_address (str): The token contract address
 
     Returns:
-        list: A list of OHLCV data points in the format:
+        list: A list of OHLCV data points in ASCENDING order (oldest first, newest last):
         [timestamp, open, high, low, close, volume]
     """
 
@@ -35,7 +35,9 @@ def get_ohlcv_data(token_address: str) -> dict:
 
     response = requests.get(ohlcv_url, params=params)
 
-    return response.json()["data"]["attributes"]["ohlcv_list"]
+    # Data from API is typically in descending order (newest first)
+    # We reverse it to ensure ascending order (oldest first, newest last)
+    return response.json()["data"]["attributes"]["ohlcv_list"][::-1]
 
 
 def calculate_average_daily_volume(ohlcv_data: list) -> float:

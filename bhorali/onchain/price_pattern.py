@@ -462,6 +462,7 @@ def analyze_technical_indicators(ohlcv_data: list) -> dict:
                 else "Bearish"
             ),
         },
+        "current_price": current_price,
     }
 
 
@@ -470,7 +471,7 @@ def get_essential_indicators(full_analysis) -> dict:
     Extract only essential technical indicators (Bollinger Bands, VWAP, and trading signals)
 
     Args:
-        ohlcv_data (list): OHLCV data points
+        full_analysis (dict): The complete analysis result from analyze_technical_indicators
 
     Returns:
         dict: Essential technical indicators and signals
@@ -478,7 +479,7 @@ def get_essential_indicators(full_analysis) -> dict:
 
     # Extract only the needed components
     essential_analysis = {
-        "current_price": full_analysis["bollinger_bands"]["current"]["middle_band"],
+        "current_price": full_analysis["current_price"],
         "bollinger_bands": {
             "current": full_analysis["bollinger_bands"]["current"],
             "volatility": full_analysis["bollinger_bands"]["volatility"],
