@@ -100,15 +100,9 @@ The technical indicators collectively suggest a bearish trend for the token. The
    - **Theil Interpretation:** Moderate inequality
    - **Interpretation:** The Nakamoto interpretation suggests that the token distribution is decentralized, which is a positive indicator for potential investors looking for a token with a broad distribution. However, the Theil interpretation of moderate inequality indicates that there is still some level of concentration that could impact market dynamics.
 
-4. **Holder Statistics:**
-   - **Total Holders Analyzed:** 100
-   - **Non-Contract Holders:** 100
-   - **Interpretation:** All holders analyzed are non-contract holders, indicating that the token is primarily held by individual or institutional investors rather than smart contracts. This could imply a more active trading environment and potential for market-driven price movements.
-
 ### Investment Potential Critique
 - **Decentralization:** The token shows a reasonable level of decentralization according to the Nakamoto interpretation, which is generally favorable for investment as it reduces the risk of market manipulation by a few large holders.
 - **Inequality Concerns:** The Gini coefficient and Theil interpretation highlight a moderate level of inequality in token distribution. This could pose a risk if large holders decide to sell their tokens, potentially leading to price volatility.
-- **Market Dynamics:** The presence of 100 non-contract holders suggests a diverse investor base, which could contribute to liquidity and active trading. However, the relatively high concentration among top holders should be monitored for any signs of coordinated selling or market influence.
 
 ### Conclusion
 The ONDO token presents a mixed investment potential. While the decentralization aspect is positive, the moderate inequality in distribution and concentration among top holders could pose risks. Investors should consider these factors alongside market conditions and other fundamental analyses before making investment decisions.

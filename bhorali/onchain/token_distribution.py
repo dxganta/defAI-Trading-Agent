@@ -317,10 +317,6 @@ def analyze_token_distribution(token_address: str) -> dict:
                     )
                 ),
             },
-            "holder_statistics": {
-                "total_holders_analyzed": len(holders),
-                "non_contract_holders": non_contract_holders,
-            },
         },
         "timestamp": datetime.now().isoformat(),
     }
