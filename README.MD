@@ -15,11 +15,7 @@
 
 3. **Volume Pattern Analysis** ✅
 
-![Volume Analysis](images/volume_analysis.png)
-
 4. **Price Pattern Analysis** ✅
-
-![Price Analysis](images/price_chart.png)
 
 5. **News Analysis** ✅
 
@@ -55,6 +51,8 @@ The ONDO token, associated with Ondo Finance, is positioned to capitalize on the
   - **Volatility**: 0.0877
 - **VWAP**: $1.29 (Current: Above VWAP)
 - **Overall Bias**: Bullish
+
+![Price Analysis](images/price_chart.png)
 
 ### Chart Analysis
 1. **Price Action**: The price has shown a downward trend since early February but is stabilizing around $1.35, indicating potential for reversal.
@@ -139,6 +137,8 @@ The ONDO token, associated with Ondo Finance, is positioned to capitalize on the
 ### Volume Trends
 - Increasing volume trend, particularly in recent weeks, indicates growing market interest.
 - **Optimal Trading Hours**: Peaks around 20:00 to 22:00.
+
+![Volume Analysis](images/volume_analysis.png)
 
 ### Recommendations
 - Enter positions during peak trading hours to capitalize on higher liquidity.
